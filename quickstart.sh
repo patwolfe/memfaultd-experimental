@@ -1,4 +1,6 @@
 #!/bin/sh
+# shellcheck shell=dash
+# shellcheck disable=SC2039  # local is non-POSIX
                                                                                                                                       
 # based on https://github.com/rust-lang/rustup/blob/master/rustup-init.sh
                                                                                                                                       
@@ -37,7 +39,7 @@ main() {
       echo "Detected architecture: '${_arch}'."
       ;;
     *)
-      err "no precompiled binaries available for architecture: $_arch"
+      err "no precompiled binaries available for architecture: ${_arch}"
       ;;
   esac
                                                                                                                                       
@@ -99,7 +101,7 @@ main() {
                                                                                                                                       
 service_exists() {
   local n="$1"
-  if [ $(systemctl list-units --all -t service --full --no-legend "$n.service" | sed 's/^\s*//g' | cut -f1 -d' ') = $n.service ]; then
+  if [ "$(systemctl list-units --all -t service --full --no-legend "${n}".service | sed 's/^\s*//g' | cut -f1 -d' ')" = "${n}".service ]; then
     return 0
   else
     return 1
@@ -128,7 +130,6 @@ get_architecture() {
 }
                                                                                                                                       
 install_memfaultd_service_file() {
-  echo "Creating memfaultd.service at $1/memfaultd.service"
   cat > "$1"/memfaultd.service <<- EOM
 [Unit]
 Description=memfaultd daemon
@@ -141,9 +142,7 @@ Restart=on-failure
 [Install]
 WantedBy=multi-user.target
 EOM
-  echo "Created memfaultd.service at $1/memfaultd.service"
   sudo mv "$1"/memfaultd.service /lib/systemd/system/
-  echo "Created memfaultd.service at /lib/systemd/system/memfaultd.service"
 }
                                                                                                                                       
 install_memfaultd_config_file() {
