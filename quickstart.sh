@@ -122,7 +122,7 @@ get_architecture() {
 
   esac
 
-  local _arch="$_cputype-${_ostype,,}"
+  local _arch="${_cputype}-${_ostype,,}"
 
   RETVAL="$_arch"
 }
