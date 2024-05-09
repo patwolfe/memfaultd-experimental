@@ -1,7 +1,7 @@
-#!/bin/bash
-
+#!/bin/sh
+                                                                                                                                      
 # based on https://github.com/rust-lang/rustup/blob/master/rustup-init.sh
-
+                                                                                                                                      
 main() {
   downloader --check
   need_cmd uname
@@ -10,7 +10,7 @@ main() {
   need_cmd mkdir
   need_cmd rm
   need_cmd rmdir
-
+                                                                                                                                      
   # systemd is currently a requirement for this script to work properly
   need_cmd systemctl
   local project_key
@@ -29,7 +29,7 @@ main() {
         ;;
     esac
   done
-
+                                                                                                                                      
   get_architecture
   local _arch="$RETVAL"
   case "$_arch" in
@@ -40,30 +40,30 @@ main() {
       err "no precompiled binaries available for architecture: $_arch"
       ;;
   esac
-
+                                                                                                                                      
   local tmp_dir
   if ! tmp_dir="$(ensure mktemp -d)"; then
     # Because the previous command ran in a subshell, we must manually
     # propagate exit status.
     err "Couldn't create a temporary work directory - exiting"
   fi
-
+                                                                                                                                      
   # Fall back to default if a URL is not specified
   if [ -z "${release}" ]; then
     release_url="https://github.com/patwolfe/memfaultd-experimental/releases/latest/download/memfaultd_${_arch}"
   fi
   local memfaultd_binary="${tmp_dir}/memfaultd"
-
+                                                                                                                                      
   # install memfaultd
   echo "Downloading memfaultd binaries from ${release_url}..."
   ensure downloader "$release_url" "$memfaultd_binary"
   echo "Downloaded memfaultd ✅"
-
+                                                                                                                                      
   ensure sudo cp "${memfaultd_binary}" /usr/bin
   ensure sudo chmod +x /usr/bin/memfaultd
   ensure sudo ln -s /usr/bin/memfaultd /usr/bin/memfaultctl
   ensure sudo ln -s /usr/bin/memfaultd /usr/sbin/memfault-core-handler
-
+                                                                                                                                      
   # Attempt to populate Project Key with optional arg then env var,
   # finally falling back to prompting the user if it's empty
   if [ -z "${project_key}" ]; then
@@ -74,7 +74,7 @@ main() {
   fi
   install_memfaultd_config_file "${tmp_dir}" "${project_key}"
   echo "Installed memfaultd ✅"
-
+                                                                                                                                      
   # Initialize memfaultd.service if it's not running already
   if ! service_exists memfaultd; then
     ensure install_memfaultd_service_file "${tmp_dir}"
@@ -87,31 +87,31 @@ main() {
     ensure sudo systemctl restart memfaultd
     echo "Restarted memfaultd service. ✅"
   fi
-
+                                                                                                                                      
   echo "Collecting data..."
   sleep 30
   ensure sudo memfaultctl sync
   echo "Sent data from this device to Memfault! ✅"
-
+                                                                                                                                      
   eval "$(memfaultctl --version)" 2> /dev/null
   echo "Finished installing Memfault Linux SDK $VERSION!"
 }
-
+                                                                                                                                      
 service_exists() {
   local n="$1"
-  if [[ $(systemctl list-units --all -t service --full --no-legend "$n.service" | sed 's/^\s*//g' | cut -f1 -d' ') == $n.service ]]; then
+  if [ $(systemctl list-units --all -t service --full --no-legend "$n.service" | sed 's/^\s*//g' | cut -f1 -d' ') = $n.service ]; then
     return 0
   else
     return 1
   fi
 }
-
+                                                                                                                                      
 get_architecture() {
   local _cputype
   _cputype="$(uname -m)"
   local _ostype
-  _ostype="$(uname -s)"
-
+  _ostype="$(uname -s | tr '[:upper:]' '[:lower:]')"
+                                                                                                                                      
   case "$_cputype" in
     arm64 | aarch64)
       local _cputype=aarch64
@@ -119,20 +119,20 @@ get_architecture() {
     *)
       err "no precompiled binaries available for CPU architecture: $_cputype"
       ;;
-
+                                                                                                                                      
   esac
-
-  local _arch="${_cputype}-${_ostype,,}"
-
+                                                                                                                                      
+  local _arch="${_cputype}-${_ostype}"
+                                                                                                                                      
   RETVAL="$_arch"
 }
-
+                                                                                                                                      
 install_memfaultd_service_file() {
   echo "Creating memfaultd.service at $1/memfaultd.service"
   cat > "$1"/memfaultd.service <<- EOM
 [Unit]
 Description=memfaultd daemon
-After=local-fs.target network.target dbus.service 
+After=local-fs.target network.target dbus.service
 [Service]
 Type=forking
 PIDFile=/run/memfaultd.pid
@@ -145,7 +145,7 @@ EOM
   sudo mv "$1"/memfaultd.service /lib/systemd/system/
   echo "Created memfaultd.service at /lib/systemd/system/memfaultd.service"
 }
-
+                                                                                                                                      
 install_memfaultd_config_file() {
   project_key=$2
   cat > "$1"/memfaultd.conf <<- EOM
@@ -219,7 +219,7 @@ downloader() {
   else
     _dld='curl or wget' # to be used in error message of need_cmd
   fi
-
+                                                                                                                                      
   # Used to verify curl or wget is available on the system at
   # start of script
   if [ "$1" = --check ]; then
@@ -242,31 +242,31 @@ downloader() {
     err "Unknown downloader" # should not reach here
   fi
 }
-
+                                                                                                                                      
 err() {
   echo "$1" >&2
   exit 1
 }
-
+                                                                                                                                      
 need_cmd() {
   if ! check_cmd "$1"; then
     err "need '$1' (command not found)"
   fi
 }
-
+                                                                                                                                      
 check_cmd() {
   command -v "$1" > /dev/null 2>&1
   return $?
 }
-
+                                                                                                                                      
 need_ok() {
   if [ $? != 0 ]; then err "$1"; fi
 }
-
+                                                                                                                                      
 assert_nz() {
   if [ -z "$1" ]; then err "assert_nz $2"; fi
 }
-
+                                                                                                                                      
 # Run a command that should never fail. If the command fails execution
 # will immediately terminate with an error showing the failing
 # command.
@@ -274,5 +274,5 @@ ensure() {
   "$@"
   need_ok "command failed: $*"
 }
-
+                                                                                                                                      
 main "$@" || exit 1
