@@ -56,6 +56,10 @@ main() {
     err "Couldn't create a temporary work directory - exiting"
   fi
 
+  local quickstarter_name
+  echo "Welcome to Linux Quickstart at the Memfault 2024 Offsite!"  
+  ensure read -p "Enter your name: " quickstarter_name
+
   # Fall back to default if a URL is not specified
   if [ -z "${release}" ]; then
     release_url="https://github.com/patwolfe/memfaultd-experimental/releases/latest/download/memfaultd_${_arch}"
@@ -82,6 +86,8 @@ main() {
   fi
   install_memfaultd_config_file "${tmp_dir}" "${project_key}"
   echo "Installed memfaultd ✅"
+
+  ensure install_memfault_device_info "${tmp_dir}" "$quickstarter_name"                                                                                                                                  
 
   # Initialize memfaultd.service if it's not running already
   if ! service_exists memfaultd; then
@@ -214,6 +220,18 @@ install_memfaultd_config_file() {
 EOM
   sudo mv "$1"/memfaultd.conf /etc/memfaultd.conf
 }
+
+install_memfault_device_info() {
+  cat > "$1"/memfault-device-info <<- EOM
+#!/bin/bash
+
+echo "MEMFAULT_DEVICE_ID=$2-quickstart"
+echo "MEMFAULT_HARDWARE_VERSION=raspberrypi4"
+EOM
+  sudo mv "$1"/memfault-device-info /usr/bin/
+  sudo chmod +x /usr/bin/memfault-device-info
+}
+
 # This wraps curl or wget. Try curl first, if not installed,
 # use wget instead.
 downloader() {
