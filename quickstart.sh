@@ -20,6 +20,7 @@ main() {
   need_cmd systemctl
   local project_key
   local release_url
+  release_url=$MEMFAULTD_URL
   while getopts ":p:u:" opt; do
     case $opt in
       p)
