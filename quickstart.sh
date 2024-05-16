@@ -204,7 +204,7 @@ install_memfaultd_config_file() {
     "rotate_size_kib": 10240,
     "rotate_after_seconds": 3600,
     "storage": "persist",
-    "source": "journald"
+    "source": "fluent-bit"
   },
   "mar": {
     "mar_file_max_size_kib": 10240,
