@@ -226,7 +226,7 @@ install_memfault_device_info() {
 #!/bin/bash
 
 echo "MEMFAULT_DEVICE_ID=$2-quickstart"
-echo "MEMFAULT_HARDWARE_VERSION=raspberrypi4"
+echo "MEMFAULT_HARDWARE_VERSION=$(uname -n)"
 EOM
   sudo mv "$1"/memfault-device-info /usr/bin/
   sudo chmod +x /usr/bin/memfault-device-info
