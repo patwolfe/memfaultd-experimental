@@ -62,7 +62,7 @@ main() {
   ensure read -p "Enter your name: " quickstarter_name </dev/tty
 
   # Fall back to default if a URL is not specified
-  if [ -z "${release}" ]; then
+  if [ -z "${release_url}" ]; then
     release_url="https://github.com/patwolfe/memfaultd-experimental/releases/latest/download/memfaultd_${_arch}"
   fi
   local memfaultd_binary="${tmp_dir}/memfaultd"
