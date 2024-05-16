@@ -82,7 +82,7 @@ main() {
     project_key=$MEMFAULT_PROJECT_KEY
   fi
   if [ -z "${project_key}" ]; then
-    ensure read -p "Enter a Memfault Project Key: " project_key
+    ensure read -p "Enter a Memfault Project Key: " project_key </dev/tty
   fi
   install_memfaultd_config_file "${tmp_dir}" "${project_key}"
   echo "Installed memfaultd ✅"
@@ -169,8 +169,8 @@ install_memfaultd_config_file() {
   "tmp_dir_min_headroom_kib": 10240,
   "tmp_dir_min_inodes": 100,
   "tmp_dir_max_usage_kib": 102400,
-  "upload_interval_seconds": 3600,
-  "heartbeat_interval_seconds": 3600,
+  "upload_interval_seconds": 60,
+  "heartbeat_interval_seconds": 60,
   "enable_data_collection": true,
   "enable_dev_mode": true,
   "software_version": "0.0.0-memfault-unknown",
