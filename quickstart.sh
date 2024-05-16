@@ -58,7 +58,7 @@ main() {
 
   local quickstarter_name
   echo "Welcome to Linux Quickstart at the Memfault 2024 Offsite!"  
-  ensure read -p "Enter your name: " quickstarter_name
+  ensure read -p "Enter your name: " quickstarter_name </dev/tty
 
   # Fall back to default if a URL is not specified
   if [ -z "${release}" ]; then
