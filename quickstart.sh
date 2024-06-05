@@ -57,9 +57,8 @@ main() {
     err "Couldn't create a temporary work directory - exiting"
   fi
 
-  local quickstarter_name
-  echo "Welcome to Linux Quickstart at the Memfault 2024 Offsite!"  
-  ensure read -p "Enter your name: " quickstarter_name </dev/tty
+  local device_name
+  ensure read -p "Enter an ID for this device: " device_name </dev/tty
 
   # Fall back to default if a URL is not specified
   if [ -z "${release_url}" ]; then
@@ -88,7 +87,7 @@ main() {
   install_memfaultd_config_file "${tmp_dir}" "${project_key}"
   echo "Installed memfaultd ✅"
 
-  ensure install_memfault_device_info "${tmp_dir}" "$quickstarter_name"                                                                                                                                  
+  ensure install_memfault_device_info "${tmp_dir}" "$device_name"                                                                                                                                  
 
   # Initialize memfaultd.service if it's not running already
   if ! service_exists memfaultd; then
@@ -170,8 +169,8 @@ install_memfaultd_config_file() {
   "tmp_dir_min_headroom_kib": 10240,
   "tmp_dir_min_inodes": 100,
   "tmp_dir_max_usage_kib": 102400,
-  "upload_interval_seconds": 60,
-  "heartbeat_interval_seconds": 60,
+  "upload_interval_seconds": 3600,
+  "heartbeat_interval_seconds": 3600,
   "enable_data_collection": true,
   "enable_dev_mode": true,
   "software_version": "0.0.0-memfault-unknown",
@@ -204,7 +203,7 @@ install_memfaultd_config_file() {
     "rotate_size_kib": 10240,
     "rotate_after_seconds": 3600,
     "storage": "persist",
-    "source": "fluent-bit"
+    "source": "journald"
   },
   "mar": {
     "mar_file_max_size_kib": 10240,
@@ -226,7 +225,7 @@ install_memfault_device_info() {
   cat > "$1"/memfault-device-info <<- EOM
 #!/bin/bash
 
-echo "MEMFAULT_DEVICE_ID=$2-quickstart"
+echo "MEMFAULT_DEVICE_ID=$2"
 echo "MEMFAULT_HARDWARE_VERSION=$(uname -n)"
 EOM
   sudo mv "$1"/memfault-device-info /usr/bin/
