@@ -84,7 +84,13 @@ main() {
   if [ -z "${project_key}" ]; then
     ensure read -p "Enter a Memfault Project Key: " project_key </dev/tty
   fi
-  install_memfaultd_config_file "${tmp_dir}" "${project_key}"
+
+  if [ -z "${release_url}" ]; then
+    install_memfaultd_config_file "${tmp_dir}" "${project_key}"
+  else 
+    install_memfaultd_config_file_no_logs "${tmp_dir}" "${project_key}"  
+  fi
+  
   echo "Installed memfaultd ✅"
 
   ensure install_memfault_device_info "${tmp_dir}" "$device_name"                                                                                                                                  
@@ -204,6 +210,60 @@ install_memfaultd_config_file() {
     "rotate_after_seconds": 3600,
     "storage": "persist",
     "source": "journald"
+  },
+  "mar": {
+    "mar_file_max_size_kib": 10240,
+    "mar_entry_max_age_seconds": 604800
+  },
+  "metrics": {
+    "enable_daily_heartbeats": false,
+    "system_metric_collection": {
+      "source": "memfaultd",
+      "poll_interval_seconds": 10
+    }
+  }
+}
+EOM
+  sudo mv "$1"/memfaultd.conf /etc/memfaultd.conf
+}
+
+
+install_memfaultd_config_file_no_logs() {
+  project_key=$2
+  cat > "$1"/memfaultd.conf <<- EOM
+{
+  "persist_dir": "/var/lib/memfaultd",
+  "tmp_dir": null,
+  "tmp_dir_min_headroom_kib": 10240,
+  "tmp_dir_min_inodes": 100,
+  "tmp_dir_max_usage_kib": 102400,
+  "upload_interval_seconds": 3600,
+  "heartbeat_interval_seconds": 3600,
+  "enable_data_collection": true,
+  "enable_dev_mode": true,
+  "software_version": "0.0.0-memfault-unknown",
+  "software_type": "memfault-unknown",
+  "project_key": "$project_key",
+  "base_url": "https://device.memfault.com",
+  "reboot": {
+    "last_reboot_reason_file": "/var/lib/memfaultd/last_reboot_reason"
+  },
+  "coredump": {
+    "coredump_max_size_kib": 96000,
+    "compression": "gzip",
+    "rate_limit_count": 5,
+    "rate_limit_duration_seconds": 3600,
+    "capture_strategy": {
+      "type": "threads",
+      "max_thread_size_kib": 32
+    },
+    "log_lines": 100
+  },
+  "http_server": {
+    "bind_address": "127.0.0.1:8787"
+  },
+  "statsd_server": {
+    "bind_address": "127.0.0.1:8125"
   },
   "mar": {
     "mar_file_max_size_kib": 10240,
