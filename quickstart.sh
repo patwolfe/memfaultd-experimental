@@ -85,11 +85,7 @@ main() {
     ensure read -p "Enter a Memfault Project Key: " project_key </dev/tty
   fi
 
-  if [ -z "${release_url}" ]; then
-    install_memfaultd_config_file "${tmp_dir}" "${project_key}"
-  else 
-    install_memfaultd_config_file_no_logs "${tmp_dir}" "${project_key}"  
-  fi
+  install_memfaultd_config_file "${tmp_dir}" "${project_key}"
   
   echo "Installed memfaultd ✅"
 
