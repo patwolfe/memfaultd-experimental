@@ -179,8 +179,6 @@ install_memfaultd_config_file() {
   "heartbeat_interval_seconds": 3600,
   "enable_data_collection": true,
   "enable_dev_mode": true,
-  "software_version": "0.0.0-memfault-unknown",
-  "software_type": "memfault-unknown",
   "project_key": "$project_key",
   "base_url": "https://device.memfault.com",
   "reboot": {
@@ -200,9 +198,6 @@ install_memfaultd_config_file() {
   "http_server": {
     "bind_address": "127.0.0.1:8787"
   },
-  "statsd_server": {
-    "bind_address": "127.0.0.1:8125"
-  },
   "logs": {
     "compression_level": 1,
     "max_lines_per_minute": 500,
@@ -218,8 +213,11 @@ install_memfaultd_config_file() {
   "metrics": {
     "enable_daily_heartbeats": false,
     "system_metric_collection": {
-      "source": "memfaultd",
+      "enable": true,
       "poll_interval_seconds": 10
+    },
+    "statsd_server": {
+      "bind_address": "127.0.0.1:8125"
     }
   }
 }
@@ -241,8 +239,6 @@ install_memfaultd_config_file_no_logs() {
   "heartbeat_interval_seconds": 3600,
   "enable_data_collection": true,
   "enable_dev_mode": true,
-  "software_version": "0.0.0-memfault-unknown",
-  "software_type": "memfault-unknown",
   "project_key": "$project_key",
   "base_url": "https://device.memfault.com",
   "reboot": {
@@ -262,9 +258,6 @@ install_memfaultd_config_file_no_logs() {
   "http_server": {
     "bind_address": "127.0.0.1:8787"
   },
-  "statsd_server": {
-    "bind_address": "127.0.0.1:8125"
-  },
   "mar": {
     "mar_file_max_size_kib": 10240,
     "mar_entry_max_age_seconds": 604800
@@ -272,8 +265,11 @@ install_memfaultd_config_file_no_logs() {
   "metrics": {
     "enable_daily_heartbeats": false,
     "system_metric_collection": {
-      "source": "memfaultd",
+      "enable": true,
       "poll_interval_seconds": 10
+    },
+    "statsd_server": {
+      "bind_address": "127.0.0.1:8125"
     }
   }
 }
