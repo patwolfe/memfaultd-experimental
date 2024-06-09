@@ -7,6 +7,18 @@
 # Enable for trace
 # set -eux
 
+# Required so that the script works
+# if run as root user or a regular user
+# Mostly for compatibility with Yocto
+# systems, which are often accessed as
+# the root user 
+sudo ()
+{
+    [[ $EUID = 0 ]] || set -- command sudo "$@"
+    "$@"
+}
+
+
 main() {
   downloader --check
   need_cmd uname
