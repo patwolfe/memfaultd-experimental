@@ -20,14 +20,20 @@ main() {
   need_cmd systemctl
   local project_key
   local release_url
+  local use_musl
+  # Only use musl memfaultd when explicitly told to
+  use_musl=$USE_MUSL
   release_url=$MEMFAULTD_URL
-  while getopts ":p:u:" opt; do
+  while getopts ":p:u:m:" opt; do
     case $opt in
       p)
         project_key="$OPTARG"
         ;;
       u)
         release_url="$OPTARG"
+        ;;
+      m)
+        use_musl=1
         ;;
       \?)
         echo "Invalid option: -$OPTARG" >&2
@@ -40,6 +46,9 @@ main() {
   local _arch="$RETVAL"
   case "$_arch" in
     aarch64-linux)
+      echo "Detected architecture: '${_arch}'."
+      ;;
+    arm-linux)
       echo "Detected architecture: '${_arch}'."
       ;;
     x86_64-linux)
@@ -62,7 +71,11 @@ main() {
 
   # Fall back to default if a URL is not specified
   if [ -z "${release_url}" ]; then
-    release_url="https://github.com/patwolfe/memfaultd-experimental/releases/latest/download/memfaultd_${_arch}"
+    if [ $use_musl ]; then
+      release_url="https://github.com/patwolfe/memfaultd-experimental/releases/latest/download/memfaultd_${_arch}-musl"
+    else 
+      release_url="https://github.com/patwolfe/memfaultd-experimental/releases/latest/download/memfaultd_${_arch}"
+    fi
   fi
   local memfaultd_binary="${tmp_dir}/memfaultd"
 
