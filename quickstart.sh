@@ -98,8 +98,16 @@ main() {
     ensure read -p "Enter a Memfault Project Key: " project_key </dev/tty
   fi
 
-  install_memfaultd_config_file "${tmp_dir}" "${project_key}"
-  
+  # Only use config that includes logs if we are NOT using
+  # musl, as that binary is not compiled with the `systemd`
+  # feature, a requirement to enable reading logs from the 
+  # system's journal
+  if [ $use_musl ]; then
+    install_memfaultd_config_file_no_logs "${tmp_dir}" "${project_key}"
+  else 
+    install_memfaultd_config_file "${tmp_dir}" "${project_key}"
+  fi 
+
   echo "Installed memfaultd ✅"
 
   ensure install_memfault_device_info "${tmp_dir}" "$device_name"                                                                                                                                  
