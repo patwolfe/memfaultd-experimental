@@ -11,13 +11,12 @@
 # if run as root user or a regular user
 # Mostly for compatibility with Yocto
 # systems, which are often accessed as
-# the root user 
-sudo ()
-{
-    [[ $EUID = 0 ]] || set -- command sudo "$@"
-    "$@"
-}
-
+# the root user
+if [ "$(id -u)" -eq 0 ]; then
+  sudo_cmd=''
+else
+  sudo_cmd='sudo'
+fi
 
 main() {
   downloader --check
@@ -33,9 +32,15 @@ main() {
   local project_key
   local release_url
   local use_musl
+
+  if [ -z "${MEMFAULTD_URL}" ]; then
+    release_url=$MEMFAULTD_URL
+  fi
+
   # Only use musl memfaultd when explicitly told to
-  use_musl=$USE_MUSL
-  release_url=$MEMFAULTD_URL
+  if [ -z "${USE_MUSL}" ]; then
+    use_musl=$USE_MUSL
+  fi
   while getopts ":p:u:m:" opt; do
     case $opt in
       p)
@@ -79,13 +84,13 @@ main() {
   fi
 
   local device_name
-  ensure read -p "Enter an ID for this device: " device_name </dev/tty
+  ensure read -p "Enter an ID for this device: " device_name < /dev/tty
 
   # Fall back to default if a URL is not specified
   if [ -z "${release_url}" ]; then
-    if [ $use_musl ]; then
+    if [ "${use_musl}" ]; then
       release_url="https://github.com/patwolfe/memfaultd-experimental/releases/latest/download/memfaultd_${_arch}-musl"
-    else 
+    else
       release_url="https://github.com/patwolfe/memfaultd-experimental/releases/latest/download/memfaultd_${_arch}"
     fi
   fi
@@ -96,10 +101,10 @@ main() {
   ensure downloader "$release_url" "$memfaultd_binary"
   echo "Downloaded memfaultd ✅"
 
-  ensure sudo cp "${memfaultd_binary}" /usr/bin
-  ensure sudo chmod +x /usr/bin/memfaultd
-  ensure sudo ln -s /usr/bin/memfaultd /usr/bin/memfaultctl
-  ensure sudo ln -s /usr/bin/memfaultd /usr/sbin/memfault-core-handler
+  ensure $sudo_cmd cp "${memfaultd_binary}" /usr/bin
+  ensure $sudo_cmd chmod +x /usr/bin/memfaultd
+  ensure $sudo_cmd ln -s /usr/bin/memfaultd /usr/bin/memfaultctl
+  ensure $sudo_cmd ln -s /usr/bin/memfaultd /usr/sbin/memfault-core-handler
 
   # Attempt to populate Project Key with optional arg then env var,
   # finally falling back to prompting the user if it's empty
@@ -107,39 +112,39 @@ main() {
     project_key=$MEMFAULT_PROJECT_KEY
   fi
   if [ -z "${project_key}" ]; then
-    ensure read -p "Enter a Memfault Project Key: " project_key </dev/tty
+    ensure read -p "Enter a Memfault Project Key: " project_key < /dev/tty
   fi
 
   # Only use config that includes logs if we are NOT using
   # musl, as that binary is not compiled with the `systemd`
-  # feature, a requirement to enable reading logs from the 
+  # feature, a requirement to enable reading logs from the
   # system's journal
-  if [ $use_musl ]; then
+  if [ "${use_musl}" ]; then
     install_memfaultd_config_file_no_logs "${tmp_dir}" "${project_key}"
-  else 
+  else
     install_memfaultd_config_file "${tmp_dir}" "${project_key}"
-  fi 
+  fi
 
   echo "Installed memfaultd ✅"
 
-  ensure install_memfault_device_info "${tmp_dir}" "$device_name"                                                                                                                                  
+  ensure install_memfault_device_info "${tmp_dir}" "$device_name"
 
   # Initialize memfaultd.service if it's not running already
   if ! service_exists memfaultd; then
     ensure install_memfaultd_service_file "${tmp_dir}"
-    ensure sudo systemctl daemon-reload
-    ensure sudo systemctl enable memfaultd
-    ensure sudo systemctl start memfaultd
+    ensure $sudo_cmd systemctl daemon-reload
+    ensure $sudo_cmd systemctl enable memfaultd
+    ensure $sudo_cmd systemctl start memfaultd
     echo "Started memfaultd service. ✅"
   else
     # Restart to make sure config changes take effect
-    ensure sudo systemctl restart memfaultd
+    ensure $sudo_cmd systemctl restart memfaultd
     echo "Restarted memfaultd service. ✅"
   fi
 
   echo "Collecting data..."
   sleep 30
-  ensure sudo memfaultctl sync
+  ensure $sudo_cmd memfaultctl sync
   echo "Sent data from this device to Memfault! ✅"
 
   eval "$(memfaultctl --version)" 2> /dev/null
@@ -192,7 +197,7 @@ Restart=on-failure
 [Install]
 WantedBy=multi-user.target
 EOM
-  sudo mv "$1"/memfaultd.service /lib/systemd/system/
+  $sudo_cmd mv "$1"/memfaultd.service /lib/systemd/system/
 }
 
 install_memfaultd_config_file() {
@@ -200,32 +205,11 @@ install_memfaultd_config_file() {
   cat > "$1"/memfaultd.conf <<- EOM
 {
   "persist_dir": "/var/lib/memfaultd",
-  "tmp_dir": null,
-  "tmp_dir_min_headroom_kib": 10240,
-  "tmp_dir_min_inodes": 100,
-  "tmp_dir_max_usage_kib": 102400,
-  "upload_interval_seconds": 3600,
-  "heartbeat_interval_seconds": 3600,
   "enable_data_collection": true,
-  "enable_dev_mode": true,
   "project_key": "$project_key",
   "base_url": "https://device.memfault.com",
   "reboot": {
     "last_reboot_reason_file": "/var/lib/memfaultd/last_reboot_reason"
-  },
-  "coredump": {
-    "coredump_max_size_kib": 96000,
-    "compression": "gzip",
-    "rate_limit_count": 5,
-    "rate_limit_duration_seconds": 3600,
-    "capture_strategy": {
-      "type": "threads",
-      "max_thread_size_kib": 32
-    },
-    "log_lines": 100
-  },
-  "http_server": {
-    "bind_address": "127.0.0.1:8787"
   },
   "logs": {
     "compression_level": 1,
@@ -235,10 +219,6 @@ install_memfaultd_config_file() {
     "storage": "persist",
     "source": "journald"
   },
-  "mar": {
-    "mar_file_max_size_kib": 10240,
-    "mar_entry_max_age_seconds": 604800
-  },
   "metrics": {
     "enable_daily_heartbeats": false,
     "system_metric_collection": {
@@ -251,45 +231,18 @@ install_memfaultd_config_file() {
   }
 }
 EOM
-  sudo mv "$1"/memfaultd.conf /etc/memfaultd.conf
+  $sudo_cmd mv "$1"/memfaultd.conf /etc/memfaultd.conf
 }
-
 
 install_memfaultd_config_file_no_logs() {
   project_key=$2
   cat > "$1"/memfaultd.conf <<- EOM
 {
   "persist_dir": "/var/lib/memfaultd",
-  "tmp_dir": null,
-  "tmp_dir_min_headroom_kib": 10240,
-  "tmp_dir_min_inodes": 100,
-  "tmp_dir_max_usage_kib": 102400,
-  "upload_interval_seconds": 3600,
-  "heartbeat_interval_seconds": 3600,
   "enable_data_collection": true,
-  "enable_dev_mode": true,
   "project_key": "$project_key",
-  "base_url": "https://device.memfault.com",
   "reboot": {
     "last_reboot_reason_file": "/var/lib/memfaultd/last_reboot_reason"
-  },
-  "coredump": {
-    "coredump_max_size_kib": 96000,
-    "compression": "gzip",
-    "rate_limit_count": 5,
-    "rate_limit_duration_seconds": 3600,
-    "capture_strategy": {
-      "type": "threads",
-      "max_thread_size_kib": 32
-    },
-    "log_lines": 100
-  },
-  "http_server": {
-    "bind_address": "127.0.0.1:8787"
-  },
-  "mar": {
-    "mar_file_max_size_kib": 10240,
-    "mar_entry_max_age_seconds": 604800
   },
   "metrics": {
     "enable_daily_heartbeats": false,
@@ -303,7 +256,7 @@ install_memfaultd_config_file_no_logs() {
   }
 }
 EOM
-  sudo mv "$1"/memfaultd.conf /etc/memfaultd.conf
+  $sudo_cmd mv "$1"/memfaultd.conf /etc/memfaultd.conf
 }
 
 install_memfault_device_info() {
@@ -313,8 +266,8 @@ install_memfault_device_info() {
 echo "MEMFAULT_DEVICE_ID=$2"
 echo "MEMFAULT_HARDWARE_VERSION=$(uname -n)"
 EOM
-  sudo mv "$1"/memfault-device-info /usr/bin/
-  sudo chmod +x /usr/bin/memfault-device-info
+  $sudo_cmd mv "$1"/memfault-device-info /usr/bin/
+  $sudo_cmd chmod +x /usr/bin/memfault-device-info
 }
 
 # This wraps curl or wget. Try curl first, if not installed,
@@ -372,10 +325,6 @@ check_cmd() {
 
 need_ok() {
   if [ $? != 0 ]; then err "$1"; fi
-}
-
-assert_nz() {
-  if [ -z "$1" ]; then err "assert_nz $2"; fi
 }
 
 # Run a command that should never fail. If the command fails execution
