@@ -7,10 +7,10 @@
 # Enable for trace
 # set -eux
 
-# Required so that the script works
-# if run as root user or a regular user
-# Mostly for compatibility with Yocto
-# systems, which are often accessed as
+LATEST_VERSION="1.12.0"
+
+# Required so that the script works  if run as root user or a regular user
+# Mostly for compatibility with Yocto systems, which are often accessed as
 # the root user
 if [ "$(id -u)" -eq 0 ]; then
   sudo_cmd=''
@@ -86,12 +86,12 @@ main() {
   local device_name
   ensure read -p "Enter an ID for this device: " device_name < /dev/tty
 
-  # Fall back to default if a URL is not specified
+  # fall back to default if a url is not specified
   if [ -z "${release_url}" ]; then
     if [ "${use_musl}" ]; then
-      release_url="https://github.com/patwolfe/memfaultd-experimental/releases/latest/download/memfaultd_${_arch}-musl"
+      release_url="https://github.com/memfault/memfault-linux-sdk/releases/download/${LATEST_VERSION}-kirkstone/memfaultd_${_arch}-musl"
     else
-      release_url="https://github.com/patwolfe/memfaultd-experimental/releases/latest/download/memfaultd_${_arch}"
+      release_url="https://github.com/memfault/memfault-linux-sdk/releases/download/${LATEST_VERSION}-kirkstone/memfaultd_${_arch}"
     fi
   fi
   local memfaultd_binary="${tmp_dir}/memfaultd"
@@ -103,8 +103,8 @@ main() {
 
   ensure $sudo_cmd cp "${memfaultd_binary}" /usr/bin
   ensure $sudo_cmd chmod +x /usr/bin/memfaultd
-  ensure $sudo_cmd ln -s /usr/bin/memfaultd /usr/bin/memfaultctl
-  ensure $sudo_cmd ln -s /usr/bin/memfaultd /usr/sbin/memfault-core-handler
+  ensure $sudo_cmd ln -sf /usr/bin/memfaultd /usr/bin/memfaultctl
+  ensure $sudo_cmd ln -sf /usr/bin/memfaultd /usr/sbin/memfault-core-handler
 
   # Attempt to populate Project Key with optional arg then env var,
   # finally falling back to prompting the user if it's empty
@@ -207,7 +207,6 @@ install_memfaultd_config_file() {
   "persist_dir": "/var/lib/memfaultd",
   "enable_data_collection": true,
   "project_key": "$project_key",
-  "base_url": "https://device.memfault.com",
   "reboot": {
     "last_reboot_reason_file": "/var/lib/memfaultd/last_reboot_reason"
   },
