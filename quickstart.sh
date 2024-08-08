@@ -47,6 +47,7 @@ main() {
         project_key="$OPTARG"
         ;;
       u)
+        echo "Using custom release URL: $OPTARG"
         release_url="$OPTARG"
         ;;
       m)
@@ -59,22 +60,24 @@ main() {
     esac
   done
 
-  get_architecture
-  local _arch="$RETVAL"
-  case "$_arch" in
-    aarch64-linux)
-      echo "Detected architecture: '${_arch}'."
-      ;;
-    arm-linux)
-      echo "Detected architecture: '${_arch}'."
-      ;;
-    x86_64-linux)
-      echo "Detected architecture: '${_arch}'."
-      ;;
-    *)
-      err "no precompiled binaries available for architecture: ${_arch}"
-      ;;
-  esac
+  if [ -z "${release_url}" ]; then
+    get_architecture
+    local _arch="$RETVAL"
+    case "$_arch" in
+      aarch64-linux)
+        echo "Detected architecture: '${_arch}'."
+        ;;
+      arm-linux)
+        echo "Detected architecture: '${_arch}'."
+        ;;
+      x86_64-linux)
+        echo "Detected architecture: '${_arch}'."
+        ;;
+      *)
+        err "no precompiled binaries available for architecture: ${_arch}"
+        ;;
+    esac
+  fi
 
   local tmp_dir
   if ! tmp_dir="$(ensure mktemp -d)"; then
